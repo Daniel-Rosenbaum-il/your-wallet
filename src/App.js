@@ -1,93 +1,138 @@
-import { Button, Col, Container, Form, Row } from "react-bootstrap";
+import { Container } from "react-bootstrap";
 import styled from "styled-components";
-import { FaEdit, FaTrash } from "react-icons/fa";
+import Header from "./cmps/Header";
+import NewEntryForm from "./cmps/NewEntryForm";
+import DisplayBalance from "./cmps/DisplayBalance";
+import { useEffect, useState } from "react";
+import EntryLines from "./cmps/EntryLines";
+import EditEntryModal from "./cmps/EditEntryModal";
 
-const Text = styled.p`
-  margin: 0;
-`;
+const initialEntries = [
+  {
+    entryId: "ent1",
+    isIncome: true,
+    amount: 1000,
+    description: "Work income",
+  },
+  {
+    entryId: "ent2",
+    isIncome: false,
+    amount: 20,
+    description: "Water bill",
+  },
+  {
+    entryId: "ent3",
+    isIncome: false,
+    amount: 35.5,
+    description: "Tiv-tam: food",
+  },
+  {
+    entryId: "ent4",
+    isIncome: false,
+    amount: 26.5,
+    description: "Am-Pm: food",
+  },
+];
+
 const Section = styled.section``;
 
-const FormGroup = styled(Form.Group)`
-  width: 50%;
-`;
 function App() {
+  const [entries, setEntries] = useState(initialEntries);
+  const [totalBudget, setTotalBudget] = useState(0);
+  const [totalIncomes, setTotalIncomes] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState(0);
+  const [isIncome, setIsIncome] = useState(false);
+  const [entryId, setEntryId] = useState();
+  const handleCloseModal = () => setIsModalOpen(false);
+
+  useEffect(() => {
+    let totalIncomes = 0;
+    let totalExpenses = 0;
+    entries.forEach((entry) => {
+      if (entry.isIncome) return (totalIncomes += entry.amount);
+      return (totalExpenses += entry.amount);
+    });
+    setTotalBudget(totalIncomes - totalExpenses);
+    setTotalIncomes(totalIncomes);
+    setTotalExpenses(totalExpenses);
+  }, [entries]);
+
+  useEffect(() => {
+    if (!isModalOpen && entryId) {
+      const newEntries = [...entries];
+      const entryIdx = newEntries.findIndex((entry) => entry.entryId === entryId);
+      newEntries[entryIdx].description = description;
+      newEntries[entryIdx].amount = +amount;
+      newEntries[entryIdx].isIncome = isIncome;
+      setEntries(newEntries);
+      resetEntry();
+    }
+    //eslint-disable-next-line
+  }, [isModalOpen]);
+
+  const deleteEntry = (entryId) => {
+    const newEntries = entries.filter((entry) => entry.entryId !== entryId);
+    setEntries(newEntries);
+  };
+
+  const addEntry = () => {
+    const newEntry = {
+      entryId: `ent${initialEntries.length + 1}`,
+      isIncome,
+      amount: +amount,
+      description,
+    };
+    setEntries((prevEntries) => [...prevEntries, newEntry]);
+    resetEntry();
+  };
+
+  const editEntry = (entryId) => {
+    if (entryId) {
+      const entryIdx = entries.findIndex((entry) => entry.entryId === entryId);
+      const entry = entries[entryIdx];
+      setEntryId(entryId);
+      setDescription(entry.description);
+      setAmount(+entry.amount);
+      setIsIncome(entry.isIncome);
+      setIsModalOpen(true);
+    }
+  };
+
+  const resetEntry = () => {
+    setDescription("");
+    setAmount(0);
+    setIsIncome(false);
+  };
   return (
     <Container>
-      <h1>Your wallet</h1>
-      <div className="d-flex flex flex-column align-items-center">
-        <Text>Your balance:</Text>
-        <Text className="mb-2 h3 text-primary">2,550.45</Text>
-      </div>
-      <Section className="balance-content mb-4">
-        <Row className="border border-dark p-1 m-0 rounded">
-          <Col className="text-center">
-            <Text className="text-dark">Incoming:</Text>
-            <Text className="text-success md">1,500</Text>
-          </Col>
-          <Col className="text-center">
-            <Text className="text-dark mb-0">Expenses:</Text>
-            <Text className="text-danger md">654.25</Text>
-          </Col>
-        </Row>
-      </Section>
+      <Header />
+      <DisplayBalance totalBudget={totalBudget} totalIncomes={totalIncomes} totalExpenses={totalExpenses} />
       <Section className="history-content mb-4 ">
         <h5>History</h5>
-        <Row className="border border-danger p-1 m-0 mb-3 rounded ">
-          <Col className="text-start">
-            <Text className="text-dark">Something</Text>
-          </Col>
-          <Col className="text-center">
-            <Text className="text-danger md">20$</Text>
-          </Col>
-          <Col className="text-center d-flex justify-content-center align-items-center gap-2">
-            <FaEdit />
-            <FaTrash />
-          </Col>
-        </Row>
-        <Row className="border border-success p-1 m-0 mb-3 rounded">
-          <Col className="text-start">
-            <Text className="text-dark">Something</Text>
-          </Col>
-          <Col className="text-center">
-            <Text className="text-success md">40$</Text>
-          </Col>
-          <Col className="text-center d-flex justify-content-center align-items-center gap-2">
-            <FaEdit />
-            <FaTrash />
-          </Col>
-        </Row>
-        <Row className="border border-danger p-1 m-0 mb-3 rounded">
-          <Col className="text-start">
-            <Text className="text-dark">Something</Text>
-          </Col>
-          <Col className="text-center">
-            <Text className="text-danger md">30$</Text>
-          </Col>
-          <Col className="text-center d-flex justify-content-center align-items-center gap-2">
-            <FaEdit />
-            <FaTrash />
-          </Col>
-        </Row>
+        <EntryLines entries={entries} deleteEntry={deleteEntry} editEntry={editEntry} />
       </Section>
-      <Section>
-        <h5>Add new transaction</h5>
-        <Form>
-          <div className="d-flex gap-2 mb-2">
-            <FormGroup>
-              <Form.Label>Description</Form.Label>
-              <Form.Control type="text" placeholder="New thing" />
-            </FormGroup>
-            <FormGroup>
-              <Form.Label>Value</Form.Label>
-              <Form.Control type="text" placeholder="$ 100.00" />
-            </FormGroup>
-          </div>
-          <FormGroup className="d-flex gap-2">
-            <Button variant="danger">Cancel</Button>
-            <Button>Ok</Button>
-          </FormGroup>
-        </Form>
-      </Section>
+      <NewEntryForm
+        addEntry={addEntry}
+        description={description}
+        setDescription={setDescription}
+        amount={amount}
+        setAmount={setAmount}
+        isIncome={isIncome}
+        setIsIncome={setIsIncome}
+      />
+      <EditEntryModal
+        isModalOpen={isModalOpen}
+        handleCloseModal={handleCloseModal}
+        description={description}
+        setDescription={setDescription}
+        amount={amount}
+        setAmount={setAmount}
+        isIncome={isIncome}
+        setIsIncome={setIsIncome}
+      />
     </Container>
   );
 }
